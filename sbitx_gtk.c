@@ -1,3 +1,7 @@
+//=========================================================================================== 
+// 30JUL25 - k3jzd tailored version to further optimize the CW Mode Operation  
+// NOTE: Works ONLY with the Pre-Release Software distributed July 7, 2025 
+//===========================================================================================
 /*
 The initial sync between the gui values, the core radio values, settings, et al are manually set.
 */
@@ -71,8 +75,8 @@ char pins[15] = {0, 2, 3, 6, 7,
 #define ENC2_SW (3)
 
 #define SW5 (22)
-#define PTT (7)
-#define DASH (21)
+#define PTT (7)			// PTT Input (Also DIT) k3jzd commented
+#define DASH (21)		// DASH Input k3jzd commented
 
 #define ENC_FAST 1
 #define ENC_SLOW 5
@@ -797,8 +801,8 @@ struct field main_controls[] = {
 
 struct field *get_field(const char *cmd);
 void update_field(struct field *f);
-void tx_on();
-void tx_off();
+void tx_on();					// seems redundant k3jzd commeneted
+void tx_off();					// seems redundant k3jzd commented
 
 //#define MAX_CONSOLE_LINES 1000
 //char *console_lines[MAX_CONSOLE_LINES];
@@ -833,7 +837,7 @@ int set_field(const char *id, const char *value){
 			v = f->min;
 		if (v > f->max)
 			v = f->max;
-		sprintf(f->value, "%d",  v);
+		 	sprintf(f->value, "%d",  v);
 	}
 	else if (f->value_type == FIELD_SELECTION || f->value_type == FIELD_TOGGLE){
 		// toggle and selection are the same type: toggle has just two values instead of many more
@@ -841,7 +845,7 @@ int set_field(const char *id, const char *value){
 		//search the current text in the selection
 		prev = NULL;
 		if (debug)
-			printf("field selection [%s]\n");
+			 printf("field selection [%s]\n");
 		strcpy(b, f->selection);
 		p = strtok(b, "/");
 		if (debug)
@@ -853,19 +857,19 @@ int set_field(const char *id, const char *value){
 				prev = p;
 			p = strtok(NULL, "/");
 			if (debug)
-				printf("second token [%s]\n", p);
+				 printf("second token [%s]\n", p);
 		}	
 		//set to the first option
 		if (p == NULL){
 			if (prev)
 				strcpy(f->value, prev);
-			printf("*Error: setting field[%s] to [%s] not permitted\n", f->cmd, value);
+			         printf("*Error: setting field[%s] to [%s] not permitted\n", f->cmd, value);
 			return 1;
 		}
 		else{
 			if (debug)
-				printf("Setting field to %s\n", value);
-			strcpy(f->value, value);
+				 printf("Setting field to %s\n", value);
+				strcpy(f->value, value);
 		}
 	}
 	else if (f->value_type == FIELD_BUTTON){
@@ -956,7 +960,7 @@ int remote_update_field(int i, char *text){
 		//send time
 		time_t now = time_sbitx();
 		struct tm *tmp = gmtime(&now);
-		sprintf(text, "STATUS %04d/%02d/%02d %02d:%02d:%02dZ",  
+		sprintf(text, "STATUS %04d/%02d/%02d %02d:%02d:%02dZ",
 			tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec); 
 		return 1;
 	}
@@ -1463,7 +1467,7 @@ static void save_user_settings(int forced){
 		fprintf(f, "\n[%s]\n", band_stack[i].name);
 		//fprintf(f, "power=%d\n", band_stack[i].power);
 		for (int j = 0; j < STACK_DEPTH; j++)
-			fprintf(f, "freq%d=%d\nmode%d=%d\n", j, band_stack[i].freq[j], j, band_stack[i].mode[j]);
+			fprintf(f, "freq%d=%d\nmode%d=%d\n", j, band_stack[i].freq[j], j, band_stack[i].mode[j]); 
 	}
 	fclose(f);
 
@@ -1493,7 +1497,7 @@ void enter_qso(){
 		get_field("#rst_received")->value, 
 		get_field("#exchange_received")->value);
 	char buff[100];
-	sprintf(buff, "Logged: %s %s-%s %s-%s\n", 
+	sprintf(buff, "Logged: %s %s-%s %s-%s\n",
 		field_str("CALL"), field_str("SENT"), field_str("NR"), 
 		field_str("RECV"), field_str("EXCH"));
 	write_console(FONT_LOG, buff);
@@ -1632,7 +1636,7 @@ static int user_settings_handler_old(void* user, const char* section,
 	}
     // if it is an empty section
     else if (strlen(section) == 0){
-      sprintf(cmd, "%s", name);
+        sprintf(cmd, "%s", name);
 			//skip the button actions 
 			struct field *f = get_field(cmd);
 			if (f){
@@ -1811,7 +1815,7 @@ void draw_tx_meters(struct field *f, cairo_t *gfx){
 	
 	sprintf(meter_str, "Power: %d Watts", field_int("POWER")/10);
 	draw_text(gfx, f->x + 20 , f->y + 5 , meter_str, FONT_FIELD_LABEL);
-	sprintf(meter_str, "VSWR: %d.%d", vswr/10,vswr%10);
+	sprintf(meter_str, "VSWR: %d.%d", vswr/10,vswr%10);	
 	draw_text(gfx, f->x + 200 , f->y + 5 , meter_str, FONT_FIELD_LABEL);
 }
 
@@ -3318,7 +3322,7 @@ void tx_on(int trigger){
 	}
 
 	if (trigger != TX_SOFT && trigger != TX_PTT){
-		puts("Error: tx_on trigger should be SOFT or PTT");
+		puts("Error: tx_on trigger should be SOFT or PTT");  // k3jzd - Debug Stuff - should be commenetd out
 		return;
 	}
 
@@ -3698,10 +3702,21 @@ void init_gpio_pins(){
 }
 
 int key_poll(){
-	int key = CW_IDLE;
+	int key = CW_IDLE;				// k3jzd this is callled constantly when in CW Mode
+							// k3jzd I would have thought only by key_isr
+							// k3jzd This a still a fucking kludge
+	// printf("key_poll() entered");		// k3jzd  UNCOMMENT FOR DEBUG ONLY
+
+	// this is NOT polling the key inputs. 		// k3jzd comment
+	// all it is doing is finding out which 	// k3jzd comment
+	// type of key is in use (confusing name) 	// k3jzd comment
+	// and it wastes time doing that over and over	// k3jzd commenr
+
+  
+
 	//int input_method = get_cw_input_method();
 	if (cw_input == NULL){
-		printf("cw_input field must point to the CW_INPUT field\n");
+		//printf("cw_input field must point to the CW_INPUT field\n");  // k3jzd commented out 
 		return 0;
 	}
 
@@ -3798,10 +3813,26 @@ void tuning_isr(void){
 		tuning_ticks--;	
 }
 
+// fark2
+
 void key_isr(void){
 	dash_state = digitalRead(DASH);
 	ptt_state = digitalRead(PTT);
-}
+	
+	//in_tx = 1;         		// k3jzd - added to try to catch initial key down - BUT this no logger works here
+
+	//key_poll();			// k3jzd - added to try to catch initial key down - BUT  does not work
+
+
+	modem_poll(MODE_CW, 0);		// k3jzd - attemt to kick start reading the initial key-down (seems to help)
+					// k3jzd - (takes too long for initail dash_state and ptt_state to be found)
+
+					// k3jzd - But, Adding this kicks off a crapload of errors to stdio
+					// k3jzd - mostly   !double   warnings and   I2CBB byte write failures
+					// k3jzd - But running HTOP does not really show any adverse CPU or memory problems
+					// k3jzd - Still, I Edited start.sh to redirect the sbitx stdio output to NULL
+}		
+
 
 void query_swr(){
 	uint8_t response[4];
@@ -3896,9 +3927,9 @@ long get_freq(){
 
 
 void bin_dump(int length, uint8_t *data){
-	printf("i2c: ");
+	printf("i2c: ");				
 	for (int i = 0; i < length; i++)
-		printf("%x ", data[i]);
+		 printf("%x ", data[i]);
 	printf("\n");
 }
 
@@ -4078,7 +4109,7 @@ static void zbitx_logs(){
 	char args[100];
 	int	row_id;
 
-	printf("Sending the last 50 log entries to zbitx\n");	
+	printf("Sending the last 50 log entries to zbitx\n");
 	query[0] = 0;
 	row_id = -1;
 	logbook_query(NULL, row_id, logbook_path);
@@ -4114,7 +4145,7 @@ void zbitx_poll(int all){
 				e = i2cbb_write_i2c_block_data(ZBITX_I2C_ADDRESS, '{', strlen(buff), buff);
 				if (!e){
 					if (retry < 3)
-						printf("Sucess on %d\n", retry);
+					    printf("Sucess on %d\n", retry);
 					break;
 				}
 				delay(3);
@@ -4232,75 +4263,159 @@ void try_ntp(){
 		next_sync = millis() + 30000;
 }
 
+
+//===========================================
+//
+//   PRIMARY CLOCK TICK "CONTROL LOOP"
+//
+//===========================================
 gboolean ui_tick(gpointer gook){
+	
+	// this is allowed - when declared inside of a function
+	//   it is only available within  that function
+	//   just as any other local varioble is
+	// But when static it still retains it's last value
+	//   even when leaving the function         // k3jxd
 	int static ticks = 0;
 
 	ticks++;
 
+	// protect agains aa runaway int	// k3jzd added
+	if( ticks > 1000 ){
+	   ticks = 0;
+	}
+
+
+	// k3jzd put put the CW processing stuff that was down lower up here at the top // k3jzd 
+ 
+
+	//  Get the Mode - it is needed for next command  // k3jzd moved this up
+	struct field *f = get_field("r1:mode"); 	  // k3jzd
+ 
+	//k3jzd - the modem_poll is called on every tick (every pass through this function)
+	// each modem will optimize for efficent operation based on tick count we pass in 
+	// BUT ONLY ticks*100 MEANS ANYTHING, AND THAT IS ONLY WHEN IN FT8 MODE 
+	modem_poll(mode_id(f_mode->value), ticks);
+
+	// k3jzd - detect a straight key in CW Mode (which I guess is the default if is none of these) 
+	if (f && (!strcmp(f_mode->value, "2TONE") || !strcmp(f_mode->value, "LSB") 
+	   || !strcmp(f_mode->value, "AM") || !strcmp(f_mode->value, "USB"))){ 
+	   if (ptt_state == LOW && in_tx == 0){ 
+		tx_on(TX_PTT);
+	   } else if (ptt_state == HIGH && in_tx == TX_PTT) { 
+		tx_off();
+	   }
+	}
+
+// fark
+
+
+//============================================================================
+// NOTE - IF THIS EXIT IS REMOVED THEN SENDING MANUAL CW WILL HAVE LCD HICCUPS.
+//	  HAVING THIS HERE BYPASSES SENDING THE POWER, SWR, AND STUFF
+//	  TO RUN THE BIG YELLOW BAR TO THE LCD CONRTROLLER. IT APPEARS
+//	  THAT THE I2C BUS GETS OVERLOADED WHENEVER THIS STUFF IS BEING
+// 	  SENT.  SO, WHILE NOT IDEAL, I PREFER IT THIS WAY - k3jzd
+//
+//	There is another EXIT a little further down - but all of the
+//	communications to the front panel generates a lot of stdio output
+//      and evetually crashs the device - htop shows 2 cores maxed out
+//	on memeory useage - that seems to have corrupted hardware.ini.
+//	So, it is better to give up seeing power & SWR (which is fluttery) 
+//============================================================================
+
+int iMode = mode_id(f_mode->value);		// k3jzd added
+ 
+// printf( "in_tx = %d\n", in_tx);   		// k3jzd added  UNCOMMENT FOR DEBUG ONLY
+// printf("Mode = %d\n", iMode);  		// k3jzd added  UNCCOMMENT FOR DEBUG ONLY
+
+
+if(in_tx> 0 && iMode == 2){ 			// k3jzd added exit
+   ticks = 0;					// k3jzd added exit
+   return(TRUE);				// k3jzd added exit
+}						// k3jzd added exit
+
+
+   	// k3jzd moved this up to here 
+   	//  - kind of hate doing this next block so much 
+   	//  but we eliminated a lot more code below }
+   	if(in_tx){
+	  char buff[10]; 
+      	   sprintf(buff,"%d", fwdpower); 
+      	   set_field("#fwdpower", buff); 
+      	   sprintf(buff, "%d", vswr); 
+      	   set_field("#vswr", buff); 
+   	}
+
+ // end of the relocated/prioritised CW stuff   // k3jzd comment 
+
+
 	while (q_length(&q_remote_commands) > 0){
-		//read each command until the 
-		char remote_cmd[1000];
-		int c, i;
-		for (i = 0; i < sizeof(remote_cmd)-2 &&  (c = q_read(&q_remote_commands)) >= ' '; i++){
-			remote_cmd[i] = c;
-		}
-		remote_cmd[i] = 0;
+ 	   //read each command until the
+	   char remote_cmd[1000]; 
+	   int c, i; 
+	   for (i = 0; i < sizeof(remote_cmd)-2 && (c = q_read(&q_remote_commands)) >= ' '; i++){
+	      remote_cmd[i] = c;
+	   }
+	   remote_cmd[i] = 0;
 
-		//echo the keystrokes for chatty modes like cw/rtty/psk31/etc
-		if (!strncmp(remote_cmd, "key ", 4))
-			for (int i = 4; remote_cmd[i] > 0; i++)
-				edit_field(get_field("#text_in"), remote_cmd[i]);	
-		else if (strlen(remote_cmd)){
-			cmd_exec(remote_cmd);
-			settings_updated = 1; //save the settings
-		}
+	   //echo the keystrokes for chatty modes like cw/rtty/psk31/etc
+	   if (!strncmp(remote_cmd, "key ", 4))
+	      for (int i = 4; remote_cmd[i] > 0; i++)
+	         edit_field(get_field("#text_in"), remote_cmd[i]); 
+           else if (strlen(remote_cmd)){
+              cmd_exec(remote_cmd);
+              settings_updated = 1; 	// save the settings
+	   }	 
+
 	}
 
-	//the Gtk invalidations can only be done from this thread, so..
-	for (struct field *f = active_layout; f->cmd[0] > 0; f++){
-		if (f->is_dirty){
-			if (f->y >= 0){
-				GdkRectangle r;
-				r.x = f->x;
-				r.y = f->y;
-				r.width = f->width;
-				r.height = f->height;
-				invalidate_rect(r.x, r.y, r.width, r.height);
-			}
-		}
-	}
-	
-	// check the tuning knob
-	struct field *f = get_field("r1:freq");
+	//the Gtk invalidations can only be done from this thread, so.. 
+	for (struct field *f =  active_layout; f->cmd[0] > 0; f++){
+	   if (f->is_dirty){ 
+              if (f->y >= 0){
+		   GdkRectangle r;
+		   r.x = f->x; 
+                   r.y = f->y; 
+                   r.width = f->width; 
+		   r.height = f->height; 
+                   invalidate_rect(r.x, r.y, r.width, r.height);
+	       }
+	    }	
+         }
+
+	// check the tuning knob			// k3jzd vatiable tuping conflict 	
+	//struct field *f = get_field("r1:freq");	// I had to define varioable "f" above
+	f = get_field("r1:freq"); 		    	// s o this was a redefinewhile 
+
 
 	while (tuning_ticks > 0){
-		edit_field(f, MIN_KEY_DOWN);
-		tuning_ticks--;
-    //sprintf(message, "tune-\r\n");
-    //write_console(FONT_LOG, message);
+  	   edit_field(f, MIN_KEY_DOWN); 
+	   tuning_ticks--; 
+	   //sprintf(message, "tune-\r\n");
+	   //write_console(FONT_LOG, 
 
 	}
 
 	while (tuning_ticks < 0){
-		edit_field(f, MIN_KEY_UP);
-		tuning_ticks++;
-    //sprintf(message, "tune+\r\n");
-    //write_console(FONT_LOG, message);
+	   edit_field(f, MIN_KEY_UP);
+           tuning_ticks++;
+	   //sprintf(message, "tune+\r\n"); 
+	   ///write_console(FONT_LOG, message);
 	}
 
+	//the modem poll is called on every tick                // k3jzd moved to CW Processing at top
+	//each modem has to optimize for efficient operation  	//  -do-
+ 	//  modem_poll(mode_id(f_mode->value), ticks);          //  -do-
 
-	//the modem tick is called on every tick
-	//each modem has to optimize for efficient operation
 
- 	modem_poll(mode_id(f_mode->value), ticks);
 
-/*
-	if (ticks % 20 == 0){
+/* if (ticks % 20 == 0){
 	}
 */
 
-	int tick_count = 50;
-	switch(mode_id(f_mode->value)){
+	int tick_count = 50; 			// k3jzd  This does not have anything to do with the 'ticks' value 
+        switch(mode_id(f_mode->value)){		//        It only alters the poll time based on the mode	
 		case MODE_CW:
 		case MODE_CWR:
 			tick_count = 50;
@@ -4311,24 +4426,42 @@ gboolean ui_tick(gpointer gook){
 		default:
 			tick_count = 100; 
 	}
-	if (ticks >= tick_count){
+	if (ticks >= (tick_count)){		// k3jzd  added comment - But 'ticks' paces the polling - so with CW it is the fastest polling
 
 		char response[6], cmd[10];
 		cmd[0] = 1;
 
 		if (zbitx_available)
-			zbitx_poll(0);
+		   zbitx_poll(0);	// Guess this is what writes to the LCD Management CPU  - k3jzd added comment
+					// While says 'poll', I think it is a two way exchange each time this is called
 
 		try_ntp();
 
-		if(in_tx){
-			char buff[10];
+		//===========================================================
+		// k3jzd added next test to minimize unneeded processing
+		//   when is in transmit mode. There is still some stuff 
+		//   above that could be be relocated to down below this 
+		//   if( in_tx ) exit.
+		//   But for now this might be enough CPU saving for good CW
+		// (exiting here instead of earlier hurts the performance)
+		//===========================================================
+		if(in_tx> 0 && iMode == 2){			// k3jzd added this seiond optional exit  
+ 		   // we have to reset ticks here because 	// k3jzd added this 	
+		   // we won't reach normal reset location 	// k3jzd added this 
+		   ticks = 0;					// k3jzd added this
+		   return (TRUE);				// k3jzd added this
+		}						// k3jzd added this
 
-			sprintf(buff,"%d", fwdpower);
-			set_field("#fwdpower", buff);		
-			sprintf(buff, "%d", vswr);
-			set_field("#vswr", buff);
-		}
+		// else, we are not in transmit mode - carry on with the rest   // k3jzd comment
+
+
+		//if(in_tx){					// k3jzd - Moved this to top of this function
+		//	char buff[10];
+		//	sprintf(buff,"%d", fwdpower);
+		//	set_field("#fwdpower", buff);		
+		//	sprintf(buff, "%d", vswr);
+		//	set_field("#vswr", buff);
+		//}
 
 		struct field *f = get_field("spectrum");
 		update_field(f);	//move this each time the spectrum watefall index is moved
@@ -4391,19 +4524,19 @@ gboolean ui_tick(gpointer gook){
   }
 	//update_field(get_field("#text_in")); //modem might have extracted some text
 
-  hamlib_slice();
+        hamlib_slice();
 	remote_slice();
 	save_user_settings(0);
 
  
-	//straight key in CW
-	if (f && (!strcmp(f_mode->value, "2TONE") || !strcmp(f_mode->value, "LSB") 
-	|| !strcmp(f_mode->value, "AM") || !strcmp(f_mode->value, "USB"))){
-		if (ptt_state == LOW && in_tx == 0)
-			tx_on(TX_PTT);
-		else if (ptt_state == HIGH && in_tx  == TX_PTT)
-			tx_off();
-	}
+	////straight key in CW			// k3jzd - Moved this to top of this function
+	//if (f && (!strcmp(f_mode->value, "2TONE") || !strcmp(f_mode->value, "LSB") 
+	//|| !strcmp(f_mode->value, "AM") || !strcmp(f_mode->value, "USB"))){
+	//	if (ptt_state == LOW && in_tx == 0)
+	//		tx_on(TX_PTT);
+	//	else if (ptt_state == HIGH && in_tx  == TX_PTT)
+	//		tx_off();
+	//}
 
 	int scroll = enc_read(&enc_a);
 	if (scroll && f_focus){
@@ -4413,7 +4546,10 @@ gboolean ui_tick(gpointer gook){
 			edit_field(f_focus, MIN_KEY_UP);
 	}	
 	return TRUE;
+
+	// end of the ui_ticks (main loop)   	// k3jzd comment  
 }
+
 
 void ui_init(int argc, char *argv[]){
  
@@ -5143,7 +5279,7 @@ void cmd_exec(char *cmd){
 	
 	else if (exec[0] == 'F' && isdigit(exec[1])){
 		char buff[1000];
-		printf("executing macro %s\n", exec);
+		printf("executing macro %s\n", exec); 
 		do_macro(get_field_by_label(exec), NULL, GDK_BUTTON_PRESS, 0, 0, 0);
 		//macro_exec(atoi(exec+1), buff);
 		//if (strlen(buff))
